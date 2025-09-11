@@ -5,10 +5,6 @@ from map import start_map
 from details_rando import start_details
 from stats import start_stats
 
-import os, sys
-print(">>> CWD:", os.getcwd())
-print(">>> sys.path:", sys.path)
-print(">>> files in cwd:", os.listdir("."))
 
 # create GSHEETS connection and load data
 if "user_data" not in st.session_state:

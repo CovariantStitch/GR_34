@@ -4,7 +4,6 @@ from haversine import haversine
 from shapely.geometry import LineString
 
 
-@st.cache_data
 def load_departments():
     departments = gpd.read_file("data/departements.geojson")
     departments = departments.to_crs(epsg=4326)

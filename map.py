@@ -25,7 +25,8 @@ def get_geolocation_():
 
 
 def start_map():
-    load_departments()
+    if "departments" not in st.session_state:
+        load_departments()
     segments, segment_distances, gpx_points = load_and_clean_gpx('./data/gr-34-en-entier-2020.gpx')
     # compute total distance
     total_distance = sum(segment_distances)

@@ -1,8 +1,8 @@
 import pandas as pd
 import streamlit as st
 
-from gsheets import update_data_gsheets
-from utils import compute_dist
+from utils.gsheets import update_data_gsheets
+from utils.gpx import compute_dist
 
 
 def save_data(df_: pd.DataFrame):

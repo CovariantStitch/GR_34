@@ -1,6 +1,10 @@
 import pandas as pd
+import streamlit as st
+
+from utils.departments import join_segments_to_departments
 
 
+@st.cache_data
 def create_geojson_features(segments_: list) -> dict:
     features = []
     for i, segment_points in enumerate(segments_):
@@ -20,8 +24,10 @@ def create_geojson_features(segments_: list) -> dict:
     return {'type': 'FeatureCollection', 'features': features}
 
 
+@st.cache_data
 def create_geojson_done(segments_: pd.DataFrame) -> dict:
     features = []
+    distances_per_department = []
     for _, segment_ in segments_.iterrows():
         segment_points = segment_["Segment"]
         line_coords = [[lon, lat] for lat, lon in segment_points]
@@ -41,4 +47,7 @@ def create_geojson_done(segments_: pd.DataFrame) -> dict:
             }
         }
         features.append(feature)
+        distances_per_department.append(join_segments_to_departments(segment_points, st.session_state.departments))
+    distances_per_department = pd.concat(distances_per_department).groupby("nom").sum().reset_index()
+    st.session_state.distances_per_department_done = distances_per_department
     return {'type': 'FeatureCollection', 'features': features}

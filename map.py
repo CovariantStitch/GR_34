@@ -27,7 +27,8 @@ def get_geolocation_():
 def start_map():
     if "departments" not in st.session_state:
         load_departments()
-    segments, segment_distances, gpx_points = load_and_clean_gpx('./data/gr-34-en-entier-2020.gpx')
+    segments, segment_distances, gpx_points, distances_per_department = load_and_clean_gpx('./data/gr-34-en-entier-2020.gpx')
+    st.session_state.distances_per_department = distances_per_department
     # compute total distance
     total_distance = sum(segment_distances)
     # create the traces for the all GR34

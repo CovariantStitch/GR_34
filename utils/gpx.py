@@ -54,5 +54,4 @@ def load_and_clean_gpx(gpx_file: str, distance_threshold_km: float = 5):
         segment_distances.append(dist)
 
     distances_per_department = pd.concat(distances_per_department).groupby("nom").sum().reset_index()
-    st.session_state.distances_per_department = distances_per_department
-    return all_continuous_segments, segment_distances, all_points
+    return all_continuous_segments, segment_distances, all_points, distances_per_department

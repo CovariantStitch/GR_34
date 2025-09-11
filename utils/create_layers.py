@@ -24,7 +24,6 @@ def create_geojson_features(segments_: list) -> dict:
     return {'type': 'FeatureCollection', 'features': features}
 
 
-@st.cache_data
 def create_geojson_done(segments_: pd.DataFrame) -> dict:
     features = []
     distances_per_department = []

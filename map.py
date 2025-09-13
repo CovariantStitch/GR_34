@@ -178,6 +178,10 @@ def start_map():
             df_.loc[index, ["Nom", "Date", "Distance", "Duration", "Locomotion"]] = new_row.iloc[0]
             save_data(df_)
             update_data_gsheets()
+        if cols_below_map[0].button("Supprimer cette randonnée", type="primary"):
+            st.session_state.user_data = st.session_state.user_data.drop(index)
+            update_data_gsheets()
+            st.rerun()
 
         # images of the trace are loaded here
         try:
@@ -188,3 +192,5 @@ def start_map():
         images = cols_below_map[1].file_uploader("Ajouter des images", accept_multiple_files=True)
         if cols_below_map[1].button("Sauvegarder les images"):
             upload_images_to_cloudinary(images, folder=name)
+            images = []
+            show_images(folder=name)

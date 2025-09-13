@@ -5,11 +5,13 @@ from folium.plugins import Draw
 from scipy.spatial import cKDTree
 from streamlit_folium import st_folium
 from streamlit_js_eval import get_geolocation
+import cloudinary.api
 
 from utils.create_layers import create_geojson_done, create_geojson_features
 from utils.departments import load_departments
 from utils.gpx import load_and_clean_gpx
-from utils.save import add_info
+from utils.save import add_info, upload_images_to_cloudinary, save_data
+from utils.gsheets import update_data_gsheets
 
 
 def get_geolocation_():
@@ -22,6 +24,19 @@ def get_geolocation_():
         user_lon = None
     st.session_state.user_lat = user_lat
     st.session_state.user_lon = user_lon
+
+
+def show_images(folder: str, n_images_per_row:int = 3):
+    folder = "GR_34/" + folder
+    cols = st.columns(n_images_per_row)
+    images = cloudinary.api.resources(
+        type="upload",
+        prefix=folder,
+        max_results=500
+    )
+    urls = [image["secure_url"] for image in images["resources"]]
+    for i_, url in enumerate(urls):
+        cols[i_%n_images_per_row].image(url)
 
 
 def start_map():
@@ -43,6 +58,10 @@ def start_map():
         st.session_state.center = segments[0][0] if segments else [48.8566, 2.3522]
     if 'zoom' not in st.session_state:
         st.session_state.zoom = 8
+    if "user_lat" not in st.session_state:
+        st.session_state.user_lat = None
+    if 'user_lon' not in st.session_state:
+        st.session_state.user_lon = None
 
     # ----------- Start the application ----------- #
     st.title("🗺️ Suivi de l'avancée sur le GR34 de Choupette & Flowflow")
@@ -61,7 +80,8 @@ def start_map():
     # add the map
     cols = st.columns([0.8, 0.2])
     cols[0].subheader("Carte de la progression")
-    cols[1].button("Géolocalisation", on_click=get_geolocation_())
+    if cols[1].button("Géolocalisation"):
+        get_geolocation_()
 
     m = folium.Map(location=st.session_state.center, zoom_start=st.session_state.zoom, tiles="OpenStreetMap")
 
@@ -75,7 +95,7 @@ def start_map():
             geojson_done, name="Randonnées effectuées",
             color="green",
             highlight_function=lambda x: {'weight': 8},
-            tooltip=folium.features.GeoJsonTooltip(fields=['Date', "Distance", "Locomotion", "Durée"])
+            tooltip=folium.features.GeoJsonTooltip(fields=['Nom', 'Date', "Distance", "Locomotion", "Durée"])
         ).add_to(m)
 
     if st.session_state.user_lat is not None:
@@ -93,7 +113,7 @@ def start_map():
     folium.LayerControl().add_to(m)
 
     # add drawing possibilities to add markers (used to add done segments)
-    draw = Draw(draw_options={
+    Draw(draw_options={
         "polyline": False,
         "polygon": False,
         "circle": False,
@@ -125,10 +145,40 @@ def start_map():
             i1, i2 = sorted([idx1, idx2])
             segment = gpx_points[i1:i2 + 1]
             # we had all the points in between
-            # st.session_state.done_segments.append({"segment": segment})
             add_info(segment)
             # clear the marker
             map_data["all_drawings"].clear()
 
             st.session_state.zoom = map_data["zoom"]
             st.session_state.center = [map_data["center"]["lat"], map_data["center"]["lng"]]
+
+    cols_below_map = st.columns([0.4, 0.6])
+    # dealing with the selection of a trace
+    if map_data.get("last_object_clicked_tooltip"):
+        # first, make the mapping between the trace and the corresponding row
+        line = map_data.get("last_object_clicked_tooltip")
+        line = [x for x in line.replace(' ', '').split("\n") if x != '']
+        name = line[1]
+        # get the associated line in dataframe
+        df_ = st.session_state.user_data
+        filter_ = df_["Nom"].apply(lambda x: x.replace(" ", "")) == name
+        row = df_[filter_][["Nom", "Date", "Distance", "Duration", "Locomotion"]]
+        index = row.index[0]
+
+        # user can edit information here
+        new_row = cols_below_map[0].data_editor(row, hide_index=True)
+        # save button after editing information
+        if cols_below_map[0].button("Sauvegarder les modifications"):
+            df_.loc[index, ["Nom", "Date", "Distance", "Duration", "Locomotion"]] = new_row.iloc[0]
+            save_data(df_)
+            update_data_gsheets()
+
+        # images of the trace are loaded here
+        try:
+            show_images(folder=name)
+        except TypeError:
+            cols_below_map[1].write("Aucune image pour cette randonnée")
+        # and the user can load new images here
+        images = cols_below_map[1].file_uploader("Ajouter des images", accept_multiple_files=True)
+        if cols_below_map[1].button("Sauvegarder les images"):
+            upload_images_to_cloudinary(images, folder=name)

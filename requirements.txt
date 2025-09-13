@@ -70,3 +70,4 @@ validators==0.35.0
 watchdog==6.0.0
 wheel==0.45.1
 xyzservices==2025.4.0
+cloudinary==1.44.1

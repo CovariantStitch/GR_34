@@ -38,11 +38,12 @@ def create_geojson_done(segments_: pd.DataFrame) -> dict:
                 'coordinates': line_coords,
             },
             'properties': {
+                'Nom': f"{segment_['Nom']}",
                 'Date': f"{segment_['Date']}",
                 'Distance': f"{segment_["Distance"]:.2f} km",
                 'Locomotion': f"{segment_['Locomotion']}",
                 'Durée': f"{segment_['Duration'] if segment_['Duration'] is not None else 'Non renseignée'}",
-                'style': {'weight': 5, 'opacity': 1}
+                'style': {'weight': 5, 'opacity': 1},
             }
         }
         features.append(feature)

@@ -7,12 +7,6 @@ from utils.gsheets import update_data_gsheets
 
 
 def upload_images_to_cloudinary(files: list, folder: str) -> list[str]:
-    if "cloudinary" not in st.session_state:
-        st.session_state.cloudinary_config = cloudinary.config(
-            cloud_name=st.secrets["cloudinary"]["cloud_name"],
-            api_key=st.secrets["cloudinary"]["api_key"],
-            api_secret=st.secrets["cloudinary"]["api_secret"]
-        )
     urls = []
     if "GR_34" not in folder:
         folder = "GR_34/" + folder

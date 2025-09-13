@@ -62,6 +62,12 @@ def start_map():
         st.session_state.user_lat = None
     if 'user_lon' not in st.session_state:
         st.session_state.user_lon = None
+    if "cloudinary" not in st.session_state:
+        st.session_state.cloudinary_config = cloudinary.config(
+            cloud_name=st.secrets["cloudinary"]["cloud_name"],
+            api_key=st.secrets["cloudinary"]["api_key"],
+            api_secret=st.secrets["cloudinary"]["api_secret"]
+        )
 
     # ----------- Start the application ----------- #
     st.title("🗺️ Suivi de l'avancée sur le GR34 de Choupette & Flowflow")

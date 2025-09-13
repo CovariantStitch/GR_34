@@ -26,7 +26,7 @@ def get_geolocation_():
     st.session_state.user_lon = user_lon
 
 
-def show_images(folder: str, n_images_per_row:int = 3):
+def show_images(folder: str, n_images_per_row:int = 3, already_displayed: list = []):
     folder = "GR_34/" + folder
     cols = st.columns(n_images_per_row)
     images = cloudinary.api.resources(
@@ -35,9 +35,14 @@ def show_images(folder: str, n_images_per_row:int = 3):
         max_results=500
     )
     urls = [image["secure_url"] for image in images["resources"]]
-    for i_, url in enumerate(urls):
-        cols[i_%n_images_per_row].image(url)
-
+    displayed = []
+    n_ = 0
+    for url in urls:
+        if url not in already_displayed:
+            cols[n_%n_images_per_row].image(url)
+            n_ += 1
+        displayed.append(url)
+    return displayed
 
 def start_map():
     if "departments" not in st.session_state:
@@ -68,6 +73,8 @@ def start_map():
             api_key=st.secrets["cloudinary"]["api_key"],
             api_secret=st.secrets["cloudinary"]["api_secret"]
         )
+    if "uploader_key" not in st.session_state:
+        st.session_state.uploader_key = None
 
     # ----------- Start the application ----------- #
     st.title("🗺️ Suivi de l'avancée sur le GR34 de Choupette & Flowflow")
@@ -173,24 +180,23 @@ def start_map():
 
         # user can edit information here
         new_row = cols_below_map[0].data_editor(row, hide_index=True)
+        col_button = cols_below_map[0].columns(2)
         # save button after editing information
-        if cols_below_map[0].button("Sauvegarder les modifications"):
+        if col_button[0].button("Sauvegarder les modifications"):
             df_.loc[index, ["Nom", "Date", "Distance", "Duration", "Locomotion"]] = new_row.iloc[0]
             save_data(df_)
             update_data_gsheets()
-        if cols_below_map[0].button("Supprimer cette randonnée", type="primary"):
+        if col_button[1].button("Supprimer cette randonnée", type="primary"):
             st.session_state.user_data = st.session_state.user_data.drop(index)
             update_data_gsheets()
             st.rerun()
 
         # images of the trace are loaded here
-        try:
-            show_images(folder=name)
-        except TypeError:
-            cols_below_map[1].write("Aucune image pour cette randonnée")
+        already_displayed = show_images(folder=name)
         # and the user can load new images here
-        images = cols_below_map[1].file_uploader("Ajouter des images", accept_multiple_files=True)
+        images = cols_below_map[1].file_uploader("Ajouter des images", accept_multiple_files=True,
+                                                 key=st.session_state.uploader_key)
         if cols_below_map[1].button("Sauvegarder les images"):
             upload_images_to_cloudinary(images, folder=name)
-            images = []
-            show_images(folder=name)
+            show_images(folder=name, already_displayed=already_displayed)
+            st.session_state.uploader_key = None
